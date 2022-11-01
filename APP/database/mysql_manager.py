@@ -71,7 +71,7 @@ class MysqlManager:
                                                                         register_user_data.password,
                                                                         register_user_data.email,
                                                                         register_user_data.faculty_id)
-            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, register_user_data))
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, register_user_query))
             cursor = self.__cursor
             cursor.execute(register_user_query)
         except mysql.connector.Error as e:
