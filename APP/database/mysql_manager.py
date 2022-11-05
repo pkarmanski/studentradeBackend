@@ -89,3 +89,60 @@ class MysqlManager:
             logger.error(LogErrorMsg.MYSQL_LOGIN_USER_ERROR.description.format(self.__log_id, self.__user_name, e))
             raise e
         return data
+
+    def get_posts(self, status: str, post_select_limit: int) -> List:
+        try:
+            get_post_query = MysqlQuery.GET_POSTS.query.format(status, post_select_limit)
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format((self.__log_id, self.__user_name, get_post_query)))
+            cursor = self.__cursor
+            cursor.execute(get_post_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_POSTS_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data
+
+    def get_faculty_list(self) -> List:
+        try:
+            get_faculty_list_query = MysqlQuery.GET_FACULTY_LIST.query
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                   get_faculty_list_query))
+            cursor = self.__cursor
+            cursor.execute(get_faculty_list_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_FACULTY_LIST_ERROR.description.format(self.__log_id, self.__user_name,
+                                                                                     e))
+            raise e
+        return data
+
+    def get_field_of_study_list(self) -> List:
+        try:
+            get_field_of_study_list = MysqlQuery.GET_FILED_OF_STUDY_LIST.query
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                   get_field_of_study_list))
+            cursor = self.__cursor
+            cursor.execute(get_field_of_study_list)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_FIELD_OF_STUDY_LIST_ERROR.description.format(self.__log_id,
+                                                                                            self.__user_name, e))
+            raise e
+        return data
+
+    def get_course(self) -> List:
+        try:
+            get_course_list = MysqlQuery.GET_COURSE_LIST.query
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                   get_course_list))
+            cursor = self.__cursor
+            cursor.execute(get_course_list)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_COURSE_LIST_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data

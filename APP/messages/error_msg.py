@@ -7,6 +7,11 @@ class LogErrorMsg(Enum):
     MYSQL_CHECK_USER_BY_EMAIL_ERROR = 'session_id: {}, user: {}, failed to check user by email, error: {}'
     MYSQL_REGISTER_USER_ERROR = 'session_id: {}, user: {}, failed to register user, error: {}'
     MYSQL_LOGIN_USER_ERROR = 'session_id: {}, user: {}, failed to login user, error: {}'
+    MYSQL_GET_POSTS_ERROR = 'session_id: {}, user: {}, failed to get post, error: {}'
+    MYSQL_GET_FACULTY_LIST_ERROR = 'session_id: {}, user: {}, failed to get faculty list, error: {}'
+    MYSQL_GET_FIELD_OF_STUDY_LIST_ERROR = 'session_id: {}, user: {}, failed to get field of study list, error: {}'
+    MYSQL_GET_COURSE_LIST_ERROR = 'session_id: {}, user: {}, failed to get course list, error: {}'
+
 
     def __init__(self, description: str):
         self.__description = description
@@ -24,6 +29,10 @@ class ServiceErrorMsg(Enum):
     REGISTER_USER_ERROR = ('ERROR_OCCURRED_DURING_REGISTRATION', 103)
     LOGIN_USER_ERROR = ('ERROR_OCCURRED_DURING_REGISTRATION', 104)
     USER_NOT_EXISTS = ('USER_DOES_NOT_EXISTS', 105)
+    GET_POSTS_ERROR = ('FAILED_TO_GET_POSTS', 106)
+    GET_FACULTY_ERROR = ('FAILED_TO_GET_FACULTY_LIST', 107)
+    GET_FILED_OF_STUDY_ERROR = ('FAILED_TO_GET_FIELD_OF_STUDY_LIST', 108)
+    GET_COURSE_ERROR = ('FAILED_TO_GET_COURSE_LIST', 109)
 
     def __init__(self, description: str, error_id: int):
         self.__description = description

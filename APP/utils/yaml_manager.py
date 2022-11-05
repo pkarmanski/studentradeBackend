@@ -23,3 +23,6 @@ class YamlData:
                               login=mysql_params['login'],
                               password=mysql_params['password'],
                               database=mysql_params['database'])
+
+    def get_select_posts_limit(self) -> int:
+        return self.data['select_posts_limit']

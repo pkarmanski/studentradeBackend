@@ -20,3 +20,31 @@ def login_user(login_user_data: LoginUser):
     service = Service(log_id, login_user_data.login)
     return service.login_user(login_user_data)
 
+
+@router.get('/getPosts')
+def get_post():
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_posts()
+
+
+@router.get('/getFacultyList')
+def get_faculty_list():
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_faculty_list()
+
+
+@router.get('/getFieldOfStudyList')
+def get_faculty_list():
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_filed_of_study_list()
+
+
+@router.get('/getCourseList')
+def get_faculty_list():
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_course_list()
+

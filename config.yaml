@@ -4,3 +4,4 @@ mysql_params:
   login: root
   password: azsxdc
   database: studentrade
+select_posts_limit: 100
