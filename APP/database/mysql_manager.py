@@ -7,7 +7,6 @@ from APP.messages.error_msg import LogErrorMsg
 from APP.database.mysql_query import MysqlQuery
 import logging
 from typing import List
-
 logger = logging.getLogger(__name__)
 
 
