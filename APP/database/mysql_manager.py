@@ -107,7 +107,7 @@ class MysqlManager:
         try:
             get_faculty_list_query = MysqlQuery.GET_FACULTY_LIST.query
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
-                                                                   get_faculty_list_query))
+                                                                  get_faculty_list_query))
             cursor = self.__cursor
             cursor.execute(get_faculty_list_query)
             columns = [item[0] for item in cursor.description]
@@ -122,7 +122,7 @@ class MysqlManager:
         try:
             get_field_of_study_list = MysqlQuery.GET_FILED_OF_STUDY_LIST.query
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
-                                                                   get_field_of_study_list))
+                                                                  get_field_of_study_list))
             cursor = self.__cursor
             cursor.execute(get_field_of_study_list)
             columns = [item[0] for item in cursor.description]
@@ -137,7 +137,7 @@ class MysqlManager:
         try:
             get_course_list = MysqlQuery.GET_COURSE_LIST.query
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
-                                                                   get_course_list))
+                                                                  get_course_list))
             cursor = self.__cursor
             cursor.execute(get_course_list)
             columns = [item[0] for item in cursor.description]

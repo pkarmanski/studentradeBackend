@@ -5,7 +5,7 @@ class RegisterUser(BaseModel):
     login: str
     password: str
     email: str
-    faculty_id: int
+    facultyId: int
 
 
 class LoginUser(BaseModel):
