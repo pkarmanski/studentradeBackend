@@ -8,7 +8,7 @@ class Error(BaseModel):
 
 
 class LoginUserResponse(BaseModel):
-    user_id: int
+    user_id: str
     error: Error
 
 
@@ -29,4 +29,10 @@ class GetCourseListResponse(BaseModel):
 
 class GetFiledOfStudyListResponse(BaseModel):
     data: List
+    error: Error
+
+
+
+class ValidateTokenResponse(BaseModel):
+    user_id: str
     error: Error

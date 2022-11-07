@@ -48,3 +48,10 @@ def get_faculty_list():
     service = Service(log_id, '')
     return service.get_course_list()
 
+
+@router.get('validateToken/{token}')
+def validate_token(token: str):
+    log_id = str(int(time.time()))
+    service = Service(log_id, token)
+    return service.validate_token(token)
+

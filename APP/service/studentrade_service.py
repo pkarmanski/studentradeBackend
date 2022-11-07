@@ -3,12 +3,13 @@ import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
-    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse
+    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user
 from APP.utils.data_manger import generate_token
+from APP.enums.default_data import DefaultValues
 
 class Service:
     def __init__(self, log_id: str, user_name: str):
@@ -18,7 +19,6 @@ class Service:
 
     def register_user(self, register_user_data: RegisterUser) -> Error:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
-
         try:
             mysql_manager.connect()
         except mysql.connector.Error:
@@ -36,8 +36,15 @@ class Service:
                     mysql_manager.register_user(register_user_data)
                     mysql_manager.commit()
                     mysql_manager.disconnect()
-                    error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                                  description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    try:
+                        token = generate_token()
+                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token)
+                    except sqlite3.Error:
+                        error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
+                                      description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
+                    else:
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.REGISTER_USER_ERROR.error_id,
                               description=ServiceErrorMsg.REGISTER_USER_ERROR.description)
@@ -45,7 +52,7 @@ class Service:
 
     def login_user(self, login_user_data: LoginUser) -> LoginUserResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
-        token = -1
+        token = DefaultValues.token_default.default
         try:
             mysql_manager.connect()
         except mysql.connector.Error:
@@ -61,7 +68,8 @@ class Service:
                     mysql_manager.disconnect()
                     try:
                         token = generate_token()
-                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, "wpisz tu ip", token)
+                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token)
+                        # TODO remove this print and add ip variable in java
                         print(select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token))
                     except sqlite3.Error:
                         error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
@@ -146,3 +154,25 @@ class Service:
                 error = Error(errorCode=ServiceErrorMsg.GET_COURSE_ERROR.error_id,
                               description=ServiceErrorMsg.GET_COURSE_ERROR.description)
         return GetCourseListResponse(error=error, data=data)
+
+    def validate_token(self, token: str) -> ValidateTokenResponse:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            try:
+                if user_data:
+                    token = generate_token()
+                    update_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_data[0]['user_id'], token)
+                else:
+                    token = DefaultValues.token_default.default
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except sqlite3.Error:
+                error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
+                              description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
+        return ValidateTokenResponse(error=error, user_id=token)
+
+
