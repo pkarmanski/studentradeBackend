@@ -1,5 +1,4 @@
 import sqlite3
-
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
@@ -63,6 +62,7 @@ class Service:
                     try:
                         token = generate_token()
                         insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, "wpisz tu ip", token)
+                        print(select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token))
                     except sqlite3.Error:
                         error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
                                       description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
