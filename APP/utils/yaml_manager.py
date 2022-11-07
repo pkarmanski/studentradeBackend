@@ -26,3 +26,6 @@ class YamlData:
 
     def get_select_posts_limit(self) -> int:
         return self.data['select_posts_limit']
+
+    def get_sqlite_db(self):
+        return self.data['sqlite_db_file']

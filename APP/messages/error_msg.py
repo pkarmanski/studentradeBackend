@@ -11,6 +11,13 @@ class LogErrorMsg(Enum):
     MYSQL_GET_FACULTY_LIST_ERROR = 'session_id: {}, user: {}, failed to get faculty list, error: {}'
     MYSQL_GET_FIELD_OF_STUDY_LIST_ERROR = 'session_id: {}, user: {}, failed to get field of study list, error: {}'
     MYSQL_GET_COURSE_LIST_ERROR = 'session_id: {}, user: {}, failed to get course list, error: {}'
+    SQLITE_CONNECTION_ERROR = 'failed to connected to sqlite, error: {}'
+    SQLITE_DISCONNECTED_ERROR = 'failed to disconnected from sqlite'
+    SQLITE_QUERY_START_ERROR = 'sqlite failed to create login_users table error: {}'
+    SQLITE_QUERY_ERROR = 'session_id: {}, user: {}, error: {}'
+    SQLITE_INSERT_ERROR = 'session_id: {}, user: {}, failed to insert user, error: {}'
+    SQLITE_UPDATE_ERROR = 'session_id: {}, user: {}, failed to update user, error: {}'
+    SQLITE_SELECT_ERROR = 'session_id: {}, user: {}, failed to select user, error: {}'
 
 
     def __init__(self, description: str):
@@ -33,6 +40,8 @@ class ServiceErrorMsg(Enum):
     GET_FACULTY_ERROR = ('FAILED_TO_GET_FACULTY_LIST', 107)
     GET_FILED_OF_STUDY_ERROR = ('FAILED_TO_GET_FIELD_OF_STUDY_LIST', 108)
     GET_COURSE_ERROR = ('FAILED_TO_GET_COURSE_LIST', 109)
+    SQLITE_INSERT_ERROR = ('FAILED_TO_INSERT_USER', 110)
+
 
     def __init__(self, description: str, error_id: int):
         self.__description = description

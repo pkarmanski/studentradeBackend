@@ -1,3 +1,5 @@
+import sqlite3
+
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
@@ -6,7 +8,8 @@ from APP.data_models.rest_data_models.response_data_models import Error, LoginUs
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
-
+from APP.database.sqlite_manager import insert_user, update_user, select_user
+from APP.utils.data_manger import generate_token
 
 class Service:
     def __init__(self, log_id: str, user_name: str):
@@ -43,7 +46,7 @@ class Service:
 
     def login_user(self, login_user_data: LoginUser) -> LoginUserResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
-        user_id = -1
+        token = -1
         try:
             mysql_manager.connect()
         except mysql.connector.Error:
@@ -57,13 +60,19 @@ class Service:
                                   description=ServiceErrorMsg.EVERYTHING_OK.description)
                     user_id = data[0][0]
                     mysql_manager.disconnect()
+                    try:
+                        token = generate_token()
+                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, "wpisz tu ip", token)
+                    except sqlite3.Error:
+                        error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
+                                      description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
                 else:
                     error = Error(errorCode=ServiceErrorMsg.USER_NOT_EXISTS.error_id,
                                   description=ServiceErrorMsg.USER_NOT_EXISTS.description)
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.LOGIN_USER_ERROR.error_id,
                               description=ServiceErrorMsg.LOGIN_USER_ERROR.description)
-        return LoginUserResponse(error=error, user_id=user_id)
+        return LoginUserResponse(error=error, user_id=token)
 
     def get_posts(self) -> GetPostsResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
