@@ -6,3 +6,4 @@ mysql_params:
   database: studentrade
 select_posts_limit: 100
 sqlite_db_file: ./APP/database/users.db
+token_lifetime: 60

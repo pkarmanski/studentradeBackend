@@ -18,7 +18,7 @@ class LogErrorMsg(Enum):
     SQLITE_INSERT_ERROR = 'session_id: {}, user: {}, failed to insert user, error: {}'
     SQLITE_UPDATE_ERROR = 'session_id: {}, user: {}, failed to update user, error: {}'
     SQLITE_SELECT_ERROR = 'session_id: {}, user: {}, failed to select user, error: {}'
-
+    SQLITE_DELETE_ERROR = 'failed to delete user, error: {}'
 
     def __init__(self, description: str):
         self.__description = description

@@ -29,3 +29,6 @@ class YamlData:
 
     def get_sqlite_db(self):
         return self.data['sqlite_db_file']
+
+    def get_token_lifetime(self):
+        return self.data['token_lifetime']

@@ -96,3 +96,23 @@ def select_user(db_file: str, log_id: str, temporary_id: str) -> List:
     return data
 
 
+def delete_user(db_file: str, token_lifetime: str):
+    try:
+        con = sqlite3.connect(db_file)
+        logger.info(LogInfoMsg.SQLITE_CONNECTED_START.description)
+    except sqlite3.Error as e:
+        logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        raise e
+    else:
+        try:
+            delete_user_query = SqliteQuery.delete_user.query.format(str(int(time.time())), token_lifetime)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(delete_user_query))
+            cursor = con.cursor()
+            cursor.execute(delete_user_query)
+            con.commit()
+            cursor.close()
+            con.close()
+        except sqlite3.Error as e:
+            logger.error(LogErrorMsg.SQLITE_DELETE_ERROR.description.format(e))
+            raise e
+
