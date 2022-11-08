@@ -15,6 +15,7 @@ def create_logged_user_table(db_file: str):
         logger.info(LogInfoMsg.SQLITE_CONNECTED_START.description)
     except sqlite3.Error as e:
         logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        time.sleep(5)
         exit(1)
     else:
         try:
@@ -27,6 +28,7 @@ def create_logged_user_table(db_file: str):
             con.close()
         except sqlite3.Error as e:
             logger.error(LogErrorMsg.SQLITE_QUERY_START_ERROR.description.format(e))
+            time.sleep(5)
             exit(2)
 
 

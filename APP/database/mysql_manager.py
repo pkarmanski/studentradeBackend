@@ -69,7 +69,8 @@ class MysqlManager:
             register_user_query = MysqlQuery.REGISTER_USER.query.format(register_user_data.login,
                                                                         register_user_data.password,
                                                                         register_user_data.email,
-                                                                        register_user_data.faculty_id)
+                                                                        register_user_data.facultyId,
+                                                                        register_user_data.ip)
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, register_user_query))
             cursor = self.__cursor
             cursor.execute(register_user_query)

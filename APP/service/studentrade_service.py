@@ -11,6 +11,7 @@ from APP.database.sqlite_manager import insert_user, update_user, select_user
 from APP.utils.data_manger import generate_token
 from APP.enums.default_data import DefaultValues
 
+
 class Service:
     def __init__(self, log_id: str, user_name: str):
         self.__log_id = log_id
@@ -36,15 +37,8 @@ class Service:
                     mysql_manager.register_user(register_user_data)
                     mysql_manager.commit()
                     mysql_manager.disconnect()
-                    try:
-                        token = generate_token()
-                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token)
-                    except sqlite3.Error:
-                        error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
-                                      description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
-                    else:
-                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                  description=ServiceErrorMsg.EVERYTHING_OK.description)
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.REGISTER_USER_ERROR.error_id,
                               description=ServiceErrorMsg.REGISTER_USER_ERROR.description)
@@ -69,8 +63,6 @@ class Service:
                     try:
                         token = generate_token()
                         insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token)
-                        # TODO remove this print and add ip variable in java
-                        print(select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token))
                     except sqlite3.Error:
                         error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
                                       description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)

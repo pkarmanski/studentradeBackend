@@ -32,7 +32,6 @@ class GetFiledOfStudyListResponse(BaseModel):
     error: Error
 
 
-
 class ValidateTokenResponse(BaseModel):
     user_id: str
     error: Error
