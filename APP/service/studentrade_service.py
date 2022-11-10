@@ -1,7 +1,7 @@
 import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
 from APP.database.mysql_manager import MysqlManager
@@ -10,6 +10,7 @@ from APP.enums.status import PostStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user
 from APP.utils.data_manger import generate_token
 from APP.enums.default_data import DefaultValues
+from APP.utils.email_manager import create_mail_data
 
 
 class Service:
@@ -167,4 +168,12 @@ class Service:
                               description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
         return ValidateTokenResponse(error=error, user_id=token)
 
-
+    def send_mail(self, send_mail_data: SendMailData):
+        try:
+            create_mail_data(send_mail_data.receiver, send_mail_data.subject, send_mail_data.body)
+            error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                          description=ServiceErrorMsg.EVERYTHING_OK.description)
+        except Exception:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
+                              description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
+        return error

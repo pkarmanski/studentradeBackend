@@ -6,7 +6,7 @@ class SqliteQuery(Enum):
     insert_user = 'insert into logged_users (user_id, login_time, ip, temporary_id) values("{}", "{}", "{}", "{}")'
     select_user = 'select user_id from logged_users where temporary_id="{}"'
     update_user = 'update logged_users set login_time="{}", temporary_id="{}" where user_id="{}"'
-    delete_user = 'delete from logged_users where "{}" - login_time > "{}"'
+    delete_user = 'delete from logged_users where "{}" - login_time > {}'
 
     def __init__(self, query: str):
         self.__query = query
@@ -14,4 +14,3 @@ class SqliteQuery(Enum):
     @property
     def query(self):
         return self.__query
-

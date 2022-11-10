@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 import time
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData
 from APP.service.studentrade_service import Service
 
 
@@ -55,3 +55,9 @@ def validate_token(token: str):
     service = Service(log_id, token)
     return service.validate_token(token)
 
+
+@router.post('/sendMail')
+def send_mail(send_mail_data: SendMailData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, 'send_mail_data.sender')
+    return service.send_mail(send_mail_data)

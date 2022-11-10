@@ -14,3 +14,10 @@ class LoginUser(BaseModel):
     login: str
     password: str
     ip: Optional[str] = ''
+
+
+class SendMailData(BaseModel):
+    # sender: str
+    receiver: str
+    subject: str
+    body: str
