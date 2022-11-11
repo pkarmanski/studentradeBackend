@@ -1,14 +1,17 @@
+import email.errors
 import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
+    ChangePassword
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
-from APP.database.sqlite_manager import insert_user, update_user, select_user
-from APP.utils.data_manger import generate_token
+from APP.database.sqlite_manager import insert_user, update_user, select_user, insert_user_forgot_password, \
+    select_forgot_code, delete_forgot_user
+from APP.utils.data_manger import generate_token, generate_code
 from APP.enums.default_data import DefaultValues
 from APP.utils.email_manager import create_mail_data
 
@@ -168,12 +171,83 @@ class Service:
                               description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
         return ValidateTokenResponse(error=error, user_id=token)
 
-    def send_mail(self, send_mail_data: SendMailData):
+    # def send_mail(self, send_mail_data: SendMailData):
+    #     try:
+    #         create_mail_data(send_mail_data.receiver, send_mail_data.subject, send_mail_data.body)
+    #         error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+    #                       description=ServiceErrorMsg.EVERYTHING_OK.description)
+    #     except Exception:
+    #         error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
+    #                           description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
+    #     return error
+
+    def forgot_password_mail(self, forgot_password_data: ForgotPassword) -> Error:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+
         try:
-            create_mail_data(send_mail_data.receiver, send_mail_data.subject, send_mail_data.body)
-            error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                          description=ServiceErrorMsg.EVERYTHING_OK.description)
-        except Exception:
-            error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
-                              description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                if mysql_manager.check_user_existence_by_email(forgot_password_data.email):
+                    mysql_manager.disconnect()
+                    try:
+                        create_mail_data(forgot_password_data.email, forgot_password_data.subject, forgot_password_data.body)
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+
+                        try:
+                            code = generate_code()
+                            insert_user_forgot_password(self.__yaml_data.get_sqlite_db(), self.__log_id, user_email=forgot_password_data.email,
+                                                        code=code)
+                        except sqlite3.Error:
+                            error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
+                                          description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
+                    except email.errors.MessageError:
+                        error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
+                                      description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
+                else:
+                    error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_MAIL_ERROR.error_id,
+                                  description=ServiceErrorMsg.FORGOT_PASSWORD_MAIL_ERROR.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
+                              description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
+        return error
+
+    def change_password(self, change_password_data: ChangePassword) -> Error:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        try:
+            correct_code = select_forgot_code(self.__yaml_data.get_sqlite_db(), self.__log_id, change_password_data.email)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            try:
+                if correct_code:
+                    if correct_code != change_password_data.code:
+                        error = Error(errorCode=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.error_id,
+                                      description=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.description)
+                    else:
+                        try:
+                            mysql_manager.connect()
+                        except mysql.connector.Error:
+                            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                        else:
+                            try:
+                                mysql_manager.change_password(change_password_data.email, change_password_data.new_password)
+                                delete_forgot_user(self.__yaml_data.get_sqlite_db(), change_password_data.email)
+                                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+                            except mysql.connector.Error:
+                                error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
+                                             description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
+                            except sqlite3.Error:
+                                error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
+                                          description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
+                else:
+                    error = Error(errorCode = ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.error_id,
+                                  description=ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.description)
         return error

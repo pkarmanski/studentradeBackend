@@ -21,3 +21,15 @@ class SendMailData(BaseModel):
     receiver: str
     subject: str
     body: str
+
+
+class ForgotPassword(BaseModel):
+    email: str
+    subject: str
+    body: str
+
+
+class ChangePassword(BaseModel):
+    email: str
+    code: int
+    new_password: str

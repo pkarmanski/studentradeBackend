@@ -32,6 +32,29 @@ def create_logged_user_table(db_file: str):
             exit(2)
 
 
+def create_forgot_password_table(db_file: str):
+    try:
+        con = sqlite3.connect(db_file)
+        logger.info(LogInfoMsg.SQLITE_CONNECTED_START.description)
+    except sqlite3.Error as e:
+        logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        time.sleep(5)
+        exit(1)
+    else:
+        try:
+            create_table_query = SqliteQuery.create_table_forgot_password.query
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(create_table_query))
+            cursor = con.cursor()
+            cursor.execute(create_table_query)
+            con.commit()
+            cursor.close()
+            con.close()
+        except sqlite3.Error as e:
+            logger.error(LogErrorMsg.SQLITE_QUERY_START_ERROR.description.format(e))
+            time.sleep(5)
+            exit(2)
+
+
 def insert_user(db_file: str, log_id: str, user_id: str, ip: str, temporary_id: str):
     try:
         con = sqlite3.connect(db_file)
@@ -50,6 +73,27 @@ def insert_user(db_file: str, log_id: str, user_id: str, ip: str, temporary_id: 
             con.close()
         except sqlite3.Error as e:
             logger.error(LogErrorMsg.SQLITE_QUERY_START_ERROR.description.format(log_id, user_id, e))
+            raise e
+
+
+def insert_user_forgot_password(db_file: str, log_id: str, user_email: str, code: int):
+    try:
+        con = sqlite3.connect(db_file)
+        logger.info(LogInfoMsg.SQLITE_CONNECTED.description.format(log_id, user_email))
+    except sqlite3.Error as e:
+        logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        raise e
+    else:
+        try:
+            insert_user_query = SqliteQuery.insert_user_forgot_password.query.format(user_email, str(code), str(int(time.time())))
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(insert_user_query))
+            cursor = con.cursor()
+            cursor.execute(insert_user_query)
+            con.commit()
+            cursor.close()
+            con.close()
+        except sqlite3.Error as e:
+            logger.error(LogErrorMsg.SQLITE_QUERY_START_ERROR.description.format(log_id, user_email, e))
             raise e
 
 
@@ -98,6 +142,30 @@ def select_user(db_file: str, log_id: str, temporary_id: str) -> List:
     return data
 
 
+def select_forgot_code(db_file: str, log_id: str, user_email: str) -> List:
+    try:
+        con = sqlite3.connect(db_file)
+        logger.info(LogInfoMsg.SQLITE_CONNECTED.description.format(log_id, user_email))
+    except sqlite3.Error as e:
+        logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        raise e
+    else:
+        try:
+            select_user_query = SqliteQuery.select_forgot_code.query.format(user_email)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(select_user_query))
+            cursor = con.cursor()
+            cursor.execute(select_user_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            con.commit()
+            cursor.close()
+            con.close()
+        except sqlite3.Error as e:
+            logger.error(LogErrorMsg.SQLITE_UPDATE_ERROR.description.format(log_id, user_email, e))
+            raise e
+    return data
+
+
 def delete_user(db_file: str, token_lifetime: str):
     try:
         con = sqlite3.connect(db_file)
@@ -108,6 +176,27 @@ def delete_user(db_file: str, token_lifetime: str):
     else:
         try:
             delete_user_query = SqliteQuery.delete_user.query.format(str(int(time.time())), token_lifetime)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(delete_user_query))
+            cursor = con.cursor()
+            cursor.execute(delete_user_query)
+            con.commit()
+            cursor.close()
+            con.close()
+        except sqlite3.Error as e:
+            logger.error(LogErrorMsg.SQLITE_DELETE_ERROR.description.format(e))
+            raise e
+
+
+def delete_forgot_user(db_file: str, user_email: str):
+    try:
+        con = sqlite3.connect(db_file)
+        logger.info(LogInfoMsg.SQLITE_CONNECTED_START.description)
+    except sqlite3.Error as e:
+        logger.error(LogErrorMsg.SQLITE_CONNECTION_ERROR.description.format(e))
+        raise e
+    else:
+        try:
+            delete_user_query = SqliteQuery.delete_forgot_user.query.format(user_email)
             logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(delete_user_query))
             cursor = con.cursor()
             cursor.execute(delete_user_query)

@@ -3,7 +3,9 @@ import ssl
 import smtplib
 
 email_password = "vsequzzctneentlx"
-def create_mail_data(email_receiver: str, subject:str, body: str):
+
+
+def create_mail_data(email_receiver: str, subject: str, body: str):
     email_sender = "studentrade.management@gmail.com"
     em = EmailMessage()
     em['From'] = email_sender

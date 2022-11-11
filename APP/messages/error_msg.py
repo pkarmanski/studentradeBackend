@@ -19,6 +19,7 @@ class LogErrorMsg(Enum):
     SQLITE_UPDATE_ERROR = 'session_id: {}, user: {}, failed to update user, error: {}'
     SQLITE_SELECT_ERROR = 'session_id: {}, user: {}, failed to select user, error: {}'
     SQLITE_DELETE_ERROR = 'failed to delete user, error: {}'
+    MYSQL_CHANGE_PASSWORD_ERROR = 'session_id: {}, failed to change password to user with email: {}, error: {}'
 
     def __init__(self, description: str):
         self.__description = description
@@ -43,6 +44,10 @@ class ServiceErrorMsg(Enum):
     SQLITE_INSERT_ERROR = ('FAILED_TO_INSERT_USER', 110)
     SQLITE_SELECT_ERROR = ('FAILED_TO_SELECT_USER', 111)
     SQLITE_UPDATE_ERROR = ('FAILED_TO_UPDATE_USER', 113)
+    FORGOT_PASSWORD_MAIL_ERROR = ('FORGOT_PASSWORD_MAIL_NOT_EXISTS', 114)
+    FORGOT_PASSWORD_ERROR = ('ERROR_OCCURRED_DURING_PROCESS', 115)
+    CODES_NOT_MATCH_ERROR = ('GIVEN_CODES_NOT_THE_SAME', 116)
+    CHANGE_PASSWORD_OUT_TIME_ERROR = ('TIME_PASSED', 117)
 
 
 

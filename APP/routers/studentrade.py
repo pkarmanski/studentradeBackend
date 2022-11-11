@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 import time
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, \
+    ForgotPassword, ChangePassword
 from APP.service.studentrade_service import Service
 
 
@@ -59,5 +60,19 @@ def validate_token(token: str):
 @router.post('/sendMail')
 def send_mail(send_mail_data: SendMailData):
     log_id = str(int(time.time()))
-    service = Service(log_id, 'send_mail_data.sender')
+    service = Service(log_id, send_mail_data.receiver, send_mail_data.subject)
     return service.send_mail(send_mail_data)
+
+
+@router.put('/forgotPassword')
+def forgot_password(forgot_password_data: ForgotPassword):
+    log_id = str(int(time.time()))
+    service = Service(log_id, forgot_password_data.email)
+    return service.forgot_password_mail(forgot_password_data)
+
+
+@router.put('/changePassword')
+def forgot_password(change_password_data: ChangePassword):
+    log_id = str(int(time.time()))
+    service = Service(log_id, change_password_data.email)
+    return service.change_password(change_password_data)

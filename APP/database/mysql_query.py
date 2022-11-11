@@ -10,6 +10,7 @@ class MysqlQuery(Enum):
     GET_FACULTY_LIST = 'select id, name from faculty'
     GET_FILED_OF_STUDY_LIST = 'select id, name from field_of_study'
     GET_COURSE_LIST = 'select id, name from course'
+    CHANGE_USER_PASSWORD = 'update users set password = "{}" where email = "{}"'
 
     def __init__(self, query: str):
         self.__query = query

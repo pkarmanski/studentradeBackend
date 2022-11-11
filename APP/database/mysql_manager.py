@@ -146,3 +146,13 @@ class MysqlManager:
             logger.error(LogErrorMsg.MYSQL_GET_COURSE_LIST_ERROR.description.format(self.__log_id, self.__user_name, e))
             raise e
         return data
+
+    def change_password(self, user_email: str, new_password: str):
+        try:
+            change_password_query = MysqlQuery.CHANGE_USER_PASSWORD.query.format(new_password, user_email)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(change_password_query))
+            cursor = self.__cursor
+            cursor.execute(change_password_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_CHANGE_PASSWORD_ERROR.description.format(self.__log_id, user_email, e))
+            raise e
