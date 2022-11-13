@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 
 
 class RegisterUser(BaseModel):
@@ -17,7 +17,6 @@ class LoginUser(BaseModel):
 
 
 class SendMailData(BaseModel):
-    # sender: str
     receiver: str
     subject: str
     body: str
@@ -33,3 +32,16 @@ class ChangePassword(BaseModel):
     email: str
     code: str
     new_password: str
+
+
+class UploadPostData(BaseModel):
+    userId: str
+    content: str
+    image: Union[str, bytes]
+    fileName: str
+    extension: str
+
+
+class ActivateUserData(BaseModel):
+    token: str
+    code: str

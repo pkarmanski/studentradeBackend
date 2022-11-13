@@ -35,3 +35,6 @@ class YamlData:
 
     def get_code_lifetime(self):
         return self.data['code_lifetime']
+
+    def get_save_file_path(self):
+        return self.data['save_file_path']

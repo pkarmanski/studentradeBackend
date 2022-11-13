@@ -5,6 +5,9 @@ from APP.data_models.rest_data_models.request_data_models import RegisterUser, L
 from APP.messages.info_msg import LogInfoMsg
 from APP.messages.error_msg import LogErrorMsg
 from APP.database.mysql_query import MysqlQuery
+from APP.utils.data_manger import get_current_date
+from APP.enums.status import UserStatus
+
 import logging
 from typing import List
 logger = logging.getLogger(__name__)
@@ -70,7 +73,7 @@ class MysqlManager:
                                                                         register_user_data.password,
                                                                         register_user_data.email,
                                                                         register_user_data.facultyId,
-                                                                        register_user_data.ip)
+                                                                        UserStatus.INACTIVE.get_description)
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, register_user_query))
             cursor = self.__cursor
             cursor.execute(register_user_query)
@@ -80,11 +83,25 @@ class MysqlManager:
 
     def login_user(self, login_user_data: LoginUser) -> List:
         try:
-            login_user_query = MysqlQuery.LOGIN_USER.query.format(login_user_data.login, login_user_data.password)
+            login_user_query = MysqlQuery.LOGIN_USER.query.format(login_user_data.login, login_user_data.password,
+                                                                  UserStatus.ACTIVE.get_description)
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, login_user_query))
             cursor = self.__cursor
             cursor.execute(login_user_query)
             data = cursor.fetchall()
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_LOGIN_USER_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data
+
+    def get_user_id(self, login: str, password: str, email: str) -> List:
+        try:
+            get_user_id_query = MysqlQuery.GET_USER_ID.query.format(login, password, email)
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, get_user_id_query))
+            cursor = self.__cursor
+            cursor.execute(get_user_id_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_LOGIN_USER_ERROR.description.format(self.__log_id, self.__user_name, e))
             raise e
@@ -156,4 +173,24 @@ class MysqlManager:
             cursor.execute(change_password_query)
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_CHANGE_PASSWORD_ERROR.description.format(self.__log_id, user_email, e))
+            raise e
+
+    def upload_post(self, user_id: int, content: str, image_path: str):
+        try:
+            upload_post_query = MysqlQuery.UPLOAD_POST.query.format(user_id, content, get_current_date(), image_path)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
+            cursor = self.__cursor
+            cursor.execute(upload_post_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_UPLOAD_POST_ERROR.description.format(self.__log_id, user_id, e))
+            raise e
+
+    def activate_user(self, user_id: int):
+        try:
+            activate_user_query = MysqlQuery.ACTIVATE_USER.query.format(UserStatus.ACTIVE.get_description, user_id)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(activate_user_query))
+            cursor = self.__cursor
+            cursor.execute(activate_user_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_ACTIVATE_USER_ERROR.description.format(self.__log_id, user_id, e))
             raise e

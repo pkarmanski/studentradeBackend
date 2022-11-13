@@ -1,7 +1,9 @@
+import logging
+
 from fastapi import APIRouter
 import time
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, \
-    ForgotPassword, ChangePassword
+    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData
 from APP.service.studentrade_service import Service
 
 
@@ -22,10 +24,10 @@ def login_user(login_user_data: LoginUser):
     return service.login_user(login_user_data)
 
 
-@router.get('/getPosts')
-def get_post():
+@router.get('/getPosts/{userName}')
+def get_post(userName: str):
     log_id = str(int(time.time()))
-    service = Service(log_id, '')
+    service = Service(log_id, userName)
     return service.get_posts()
 
 
@@ -57,14 +59,7 @@ def validate_token(token: str):
     return service.validate_token(token)
 
 
-@router.post('/sendMail')
-def send_mail(send_mail_data: SendMailData):
-    log_id = str(int(time.time()))
-    service = Service(log_id, send_mail_data.receiver, send_mail_data.subject)
-    return service.send_mail(send_mail_data)
-
-
-@router.put('/forgotPassword')
+@router.post('/forgotPassword')
 def forgot_password(forgot_password_data: ForgotPassword):
     log_id = str(int(time.time()))
     service = Service(log_id, forgot_password_data.email)
@@ -76,3 +71,18 @@ def forgot_password(change_password_data: ChangePassword):
     log_id = str(int(time.time()))
     service = Service(log_id, change_password_data.email)
     return service.change_password(change_password_data)
+
+
+@router.put('/uploadPost')
+def make_post(upload_post_data: UploadPostData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, upload_post_data.userId)
+    return service.upload_post(upload_post_data)
+
+
+@router.put('/activateUser')
+def activate_user(activate_user_data: ActivateUserData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, activate_user_data.token)
+    return service.activate_user(activate_user_data.token, activate_user_data.code)
+

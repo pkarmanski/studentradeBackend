@@ -20,6 +20,8 @@ class LogErrorMsg(Enum):
     SQLITE_SELECT_ERROR = 'session_id: {}, user: {}, failed to select user, error: {}'
     SQLITE_DELETE_ERROR = 'failed to delete user, error: {}'
     MYSQL_CHANGE_PASSWORD_ERROR = 'session_id: {}, failed to change password to user with email: {}, error: {}'
+    MYSQL_UPLOAD_POST_ERROR = 'session_id: {}, user: {},  failed to upload post, error: {}'
+    MYSQL_ACTIVATE_USER_ERROR = 'session_id: {}, user: {}, failed to activate user, error: {}'
 
     def __init__(self, description: str):
         self.__description = description
@@ -48,8 +50,9 @@ class ServiceErrorMsg(Enum):
     FORGOT_PASSWORD_ERROR = ('ERROR_OCCURRED_DURING_PROCESS', 115)
     CODES_NOT_MATCH_ERROR = ('GIVEN_CODES_NOT_THE_SAME', 116)
     CHANGE_PASSWORD_OUT_TIME_ERROR = ('TIME_PASSED', 117)
-
-
+    USER_NOT_LOGGED_IN_ERROR = ('USER_NOT_LOGGED_IN', 118)
+    UPLOAD_POST_ERROR = ("FAILED_TO_UPLOAD_POST", 119)
+    ACTIVATE_USER_ERROR = ("FAILED_TO_ACTIVATE_USER", 120)
 
     def __init__(self, description: str, error_id: int):
         self.__description = description

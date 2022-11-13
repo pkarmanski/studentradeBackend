@@ -1,18 +1,20 @@
 import email.errors
+import logging
 import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
-    ChangePassword
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword,\
+    ChangePassword, UploadPostData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user, insert_user_forgot_password, \
-    select_forgot_code, delete_forgot_user
-from APP.utils.data_manger import generate_token, generate_code
+    select_forgot_code, delete_forgot_user, insert_user_to_activate, select_activate_user, select_all
+from APP.utils.data_manger import generate_token, generate_code, save_file, generate_link
 from APP.enums.default_data import DefaultValues
+from APP.enums.mail_data import MailData
 from APP.utils.email_manager import create_mail_data
 
 
@@ -40,10 +42,22 @@ class Service:
                 else:
                     mysql_manager.register_user(register_user_data)
                     mysql_manager.commit()
+                    user_id = mysql_manager.get_user_id(register_user_data.login, register_user_data.password,
+                                                        register_user_data.email)
+                    if user_id:
+                        token = generate_token()
+                        code = generate_code()
+                        insert_user_to_activate(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id[0]['id'],
+                                                token, code)
+                        create_mail_data(register_user_data.email, MailData.activate_user_subject.get_description,
+                                         MailData.activate_user_body.get_description + generate_link(token, code))
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    else:
+                        error = Error(errorCode=ServiceErrorMsg.REGISTER_USER_ERROR.error_id,
+                                      description=ServiceErrorMsg.REGISTER_USER_ERROR.description)
                     mysql_manager.disconnect()
-                    error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                                  description=ServiceErrorMsg.EVERYTHING_OK.description)
-            except mysql.connector.Error:
+            except (mysql.connector.Error, sqlite3.Error):
                 error = Error(errorCode=ServiceErrorMsg.REGISTER_USER_ERROR.error_id,
                               description=ServiceErrorMsg.REGISTER_USER_ERROR.description)
         return error
@@ -212,35 +226,97 @@ class Service:
     def change_password(self, change_password_data: ChangePassword) -> Error:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
         try:
-            correct_code = select_forgot_code(self.__yaml_data.get_sqlite_db(), self.__log_id, change_password_data.email)
+            correct_code = select_forgot_code(self.__yaml_data.get_sqlite_db(),
+                                              self.__log_id, change_password_data.email)
         except sqlite3.Error:
             error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
                           description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
         else:
             try:
-                if correct_code:
-                    if correct_code != change_password_data.code:
-                        error = Error(errorCode=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.error_id,
-                                      description=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.description)
+                code = correct_code[0]['code']
+                if change_password_data.code != code:
+                    error = Error(errorCode=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.error_id,
+                                  description=ServiceErrorMsg.CODES_NOT_MATCH_ERROR.description)
+                else:
+                    try:
+                        mysql_manager.connect()
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                      description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
                     else:
                         try:
-                            mysql_manager.connect()
-                        except mysql.connector.Error:
-                            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
-                                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
-                        else:
-                            try:
-                                mysql_manager.change_password(change_password_data.email, change_password_data.new_password)
-                                delete_forgot_user(self.__yaml_data.get_sqlite_db(), change_password_data.email)
-                                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                                              description=ServiceErrorMsg.EVERYTHING_OK.description)
-                            except mysql.connector.Error:
-                                error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
-                                             description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
-                            except sqlite3.Error:
-                                error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
+                            mysql_manager.change_password(change_password_data.email, change_password_data.new_password)
+                            mysql_manager.commit()
+                            mysql_manager.disconnect()
+                            delete_forgot_user(self.__yaml_data.get_sqlite_db(), change_password_data.email)
+                            error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                          description=ServiceErrorMsg.EVERYTHING_OK.description)
+                        except (mysql.connector.Error, sqlite3.Error):
+                            error = Error(errorCode=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.error_id,
                                           description=ServiceErrorMsg.FORGOT_PASSWORD_ERROR.description)
+
+            except IndexError:
+                error = Error(errorCode=ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.error_id,
+                              description=ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.description)
+        return error
+
+    def upload_post(self, upload_post_data: UploadPostData) -> Error:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, upload_post_data.userId)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_data:
+                mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
                 else:
-                    error = Error(errorCode = ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.error_id,
-                                  description=ServiceErrorMsg.CHANGE_PASSWORD_OUT_TIME_ERROR.description)
+                    try:
+                        file_path = save_file(upload_post_data.image, upload_post_data.fileName,
+                                              upload_post_data.extension, self.__yaml_data.get_save_file_path())
+                        mysql_manager.upload_post(user_data[0]['user_id'], upload_post_data.content,
+                                                  file_path)
+                        mysql_manager.commit()
+                        mysql_manager.disconnect()
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.UPLOAD_POST_ERROR.error_id,
+                                      description=ServiceErrorMsg.UPLOAD_POST_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
+                              description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
+        return error
+
+    def activate_user(self, token: str, code: str):
+        try:
+            user_id = select_activate_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token, code)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_id:
+                mysql_manager = MysqlManager(self.__log_id, user_id[0]['user_id'], self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                else:
+                    try:
+                        mysql_manager.activate_user(user_id[0]['user_id'])
+                        mysql_manager.commit()
+                        mysql_manager.disconnect()
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.ACTIVATE_USER_ERROR.error_id,
+                                      description=ServiceErrorMsg.ACTIVATE_USER_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.ACTIVATE_USER_ERROR.error_id,
+                              description=ServiceErrorMsg.ACTIVATE_USER_ERROR.description)
         return error
