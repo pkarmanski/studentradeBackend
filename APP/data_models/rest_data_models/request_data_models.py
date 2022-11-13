@@ -31,5 +31,5 @@ class ForgotPassword(BaseModel):
 
 class ChangePassword(BaseModel):
     email: str
-    code: int
+    code: str
     new_password: str

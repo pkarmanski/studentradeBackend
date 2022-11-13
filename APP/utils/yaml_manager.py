@@ -32,3 +32,6 @@ class YamlData:
 
     def get_token_lifetime(self):
         return self.data['token_lifetime']
+
+    def get_code_lifetime(self):
+        return self.data['code_lifetime']

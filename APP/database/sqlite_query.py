@@ -8,10 +8,13 @@ class SqliteQuery(Enum):
     insert_user_forgot_password = 'insert into forgot_password (user_email, code, confirmation_time) values("{}", "{}", "{}")'
 
     select_user = 'select user_id from logged_users where temporary_id="{}"'
-    select_forgot_code = 'select code from logged_users where email = "{}"'
+    select_forgot_code = 'select code from forgot_password where user_email="{}"'
+    select_activate_user_code = 'select user_id from activate_user where token="{}" and code="{}"'
+
     update_user = 'update logged_users set login_time="{}", temporary_id="{}" where user_id="{}"'
     delete_user = 'delete from logged_users where "{}" - login_time > {}'
-    delete_forgot_user = 'delete from forgot_password where email = "{}"'
+    delete_forgot_user = 'delete from forgot_password where user_email="{}"'
+    delete_forgot_user_overtime = 'delete from forgot_password where "{}" - confirmation_time > {}'
 
     def __init__(self, query: str):
         self.__query = query

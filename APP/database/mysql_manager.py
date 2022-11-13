@@ -150,7 +150,8 @@ class MysqlManager:
     def change_password(self, user_email: str, new_password: str):
         try:
             change_password_query = MysqlQuery.CHANGE_USER_PASSWORD.query.format(new_password, user_email)
-            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(change_password_query))
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                  change_password_query))
             cursor = self.__cursor
             cursor.execute(change_password_query)
         except mysql.connector.Error as e:
