@@ -12,7 +12,7 @@ from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user, insert_user_forgot_password, \
     select_forgot_code, delete_forgot_user, insert_user_to_activate, select_activate_user, select_all
-from APP.utils.data_manger import generate_token, generate_code, save_file, generate_link
+from APP.utils.data_manger import generate_token, generate_code, save_file, generate_link, get_file_data
 from APP.enums.default_data import DefaultValues
 from APP.enums.mail_data import MailData
 from APP.utils.email_manager import create_mail_data
@@ -80,7 +80,8 @@ class Service:
                     mysql_manager.disconnect()
                     try:
                         token = generate_token()
-                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token)
+                        insert_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_id, login_user_data.ip, token,
+                                    login_user_data.login)
                     except sqlite3.Error:
                         error = Error(errorCode=ServiceErrorMsg.SQLITE_INSERT_ERROR.error_id,
                                       description=ServiceErrorMsg.SQLITE_INSERT_ERROR.description)
@@ -90,7 +91,7 @@ class Service:
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.LOGIN_USER_ERROR.error_id,
                               description=ServiceErrorMsg.LOGIN_USER_ERROR.description)
-        return LoginUserResponse(error=error, user_id=token)
+        return LoginUserResponse(error=error, user_id=token, login=login_user_data.login)
 
     def get_posts(self) -> GetPostsResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
@@ -104,6 +105,11 @@ class Service:
             try:
                 data = mysql_manager.get_posts(PostStatus.ACTIVE.get_description,
                                                self.__yaml_data.get_select_posts_limit())
+                for record in data:
+                    try:
+                        record['image'] = get_file_data(record['image'])
+                    except Exception:
+                        record['image'] = ""
                 error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
                               description=ServiceErrorMsg.EVERYTHING_OK.description)
             except mysql.connector.Error:
@@ -166,6 +172,7 @@ class Service:
         return GetCourseListResponse(error=error, data=data)
 
     def validate_token(self, token: str) -> ValidateTokenResponse:
+        login = "-1"
         try:
             user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token)
         except sqlite3.Error:
@@ -180,10 +187,11 @@ class Service:
                     token = DefaultValues.token_default.default
                 error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
                               description=ServiceErrorMsg.EVERYTHING_OK.description)
+                login = user_data[0]['login']
             except sqlite3.Error:
                 error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
                               description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
-        return ValidateTokenResponse(error=error, user_id=token)
+        return ValidateTokenResponse(error=error, user_id=token, login=login)
 
     def forgot_password_mail(self, forgot_password_data: ForgotPassword) -> Error:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
@@ -276,10 +284,14 @@ class Service:
                                   description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
                 else:
                     try:
-                        file_path = save_file(upload_post_data.image, upload_post_data.fileName,
-                                              upload_post_data.extension, self.__yaml_data.get_save_file_path())
-                        mysql_manager.upload_post(user_data[0]['user_id'], upload_post_data.content,
-                                                  file_path)
+                        if upload_post_data.image is not None:
+                            file_path = save_file(upload_post_data.image, upload_post_data.fileName,
+                                                  self.__yaml_data.get_save_file_path())
+                            mysql_manager.upload_post(user_data[0]['user_id'], upload_post_data.content,
+                                                      file_path)
+                        else:
+                            mysql_manager.upload_post(user_data[0]['user_id'], upload_post_data.content, '')
+
                         mysql_manager.commit()
                         mysql_manager.disconnect()
                         error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,

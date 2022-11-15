@@ -37,9 +37,8 @@ class ChangePassword(BaseModel):
 class UploadPostData(BaseModel):
     userId: str
     content: str
-    image: Union[str, bytes]
-    fileName: str
-    extension: str
+    image: Optional[Union[str, bytes]] = None
+    fileName: Optional[str] = None
 
 
 class ActivateUserData(BaseModel):

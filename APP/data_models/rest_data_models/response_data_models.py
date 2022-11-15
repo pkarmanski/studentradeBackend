@@ -10,6 +10,7 @@ class Error(BaseModel):
 class LoginUserResponse(BaseModel):
     user_id: str
     error: Error
+    login: str
 
 
 class GetPostsResponse(BaseModel):
@@ -34,4 +35,5 @@ class GetFiledOfStudyListResponse(BaseModel):
 
 class ValidateTokenResponse(BaseModel):
     user_id: str
+    login: str
     error: Error

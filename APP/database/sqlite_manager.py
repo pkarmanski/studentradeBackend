@@ -78,7 +78,7 @@ def create_activate_user_table(db_file: str):
             exit(6)
 
 
-def insert_user(db_file: str, log_id: str, user_id: str, ip: str, temporary_id: str):
+def insert_user(db_file: str, log_id: str, user_id: str, ip: str, temporary_id: str, login: str):
     try:
         con = sqlite3.connect(db_file)
         logger.info(LogInfoMsg.SQLITE_CONNECTED.description.format(log_id, user_id))
@@ -87,7 +87,8 @@ def insert_user(db_file: str, log_id: str, user_id: str, ip: str, temporary_id: 
         raise e
     else:
         try:
-            insert_user_query = SqliteQuery.insert_user.query.format(user_id, str(int(time.time())), ip, temporary_id)
+            insert_user_query = SqliteQuery.insert_user.query.format(user_id, str(int(time.time())), ip, temporary_id,
+                                                                     login)
             logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(insert_user_query))
             cursor = con.cursor()
             cursor.execute(insert_user_query)

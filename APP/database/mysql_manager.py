@@ -6,7 +6,7 @@ from APP.messages.info_msg import LogInfoMsg
 from APP.messages.error_msg import LogErrorMsg
 from APP.database.mysql_query import MysqlQuery
 from APP.utils.data_manger import get_current_date
-from APP.enums.status import UserStatus
+from APP.enums.status import UserStatus, PostStatus
 
 import logging
 from typing import List
@@ -110,7 +110,7 @@ class MysqlManager:
     def get_posts(self, status: str, post_select_limit: int) -> List:
         try:
             get_post_query = MysqlQuery.GET_POSTS.query.format(status, post_select_limit)
-            logger.info(LogInfoMsg.MYSQL_QUERY.description.format((self.__log_id, self.__user_name, get_post_query)))
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, get_post_query))
             cursor = self.__cursor
             cursor.execute(get_post_query)
             columns = [item[0] for item in cursor.description]
@@ -177,7 +177,8 @@ class MysqlManager:
 
     def upload_post(self, user_id: int, content: str, image_path: str):
         try:
-            upload_post_query = MysqlQuery.UPLOAD_POST.query.format(user_id, content, get_current_date(), image_path)
+            upload_post_query = MysqlQuery.UPLOAD_POST.query.format(user_id, content, get_current_date(), image_path,
+                                                                    PostStatus.ACTIVE.get_description.lower())
             logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
             cursor = self.__cursor
             cursor.execute(upload_post_query)

@@ -35,3 +35,6 @@ from APP.utils.data_manger import save_file
 # response = requests.put("http://192.168.0.106:8888/studentrade/v1/uploadPost", data=upload_post_data.json())
 #
 # print(response.text)
+import os
+
+print(os.getcwd())
