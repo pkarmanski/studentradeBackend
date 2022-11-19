@@ -43,5 +43,5 @@ def get_file_data(file_path: str) -> str:
 
 
 def generate_link(token: str, code: str):
-    return "http://localhost:8081/studentrade_v3_war_exploded/login/" + token + "/" + code
+    return "http://157.158.126.137:8081/studentrade_v3_war_exploded/login/" + token + "/" + code
 

@@ -108,6 +108,7 @@ class Service:
                 for record in data:
                     try:
                         record['image'] = get_file_data(record['image'])
+                        record['extension'] = record['image'].split(".")[-1]
                     except Exception:
                         record['image'] = ""
                 error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
