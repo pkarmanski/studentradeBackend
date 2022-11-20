@@ -24,10 +24,10 @@ def login_user(login_user_data: LoginUser):
     return service.login_user(login_user_data)
 
 
-@router.get('/getPosts/{userName}')
-def get_post(userName: str):
+@router.get('/getPosts')
+def get_post():
     log_id = str(int(time.time()))
-    service = Service(log_id, userName)
+    service = Service(log_id, '')
     return service.get_posts()
 
 

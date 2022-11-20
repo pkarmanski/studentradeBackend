@@ -2,10 +2,10 @@ mysql_params:
   host: 127.0.0.1
   port: 3306
   login: root
-  password: blaszka
+  password: azsxdc
   database: studentrade
 select_posts_limit: 100
 sqlite_db_file: ./APP/database/users.db
 token_lifetime: 600
 code_lifetime: 300
-save_file_path: ./storage/
+save_file_path: ./storage
