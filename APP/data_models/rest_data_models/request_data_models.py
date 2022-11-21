@@ -44,3 +44,9 @@ class UploadPostData(BaseModel):
 class ActivateUserData(BaseModel):
     token: str
     code: str
+
+
+class UploadCommentBody(BaseModel):
+    userId: str
+    content: str
+    postId: int

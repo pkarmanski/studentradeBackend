@@ -37,3 +37,8 @@ class ValidateTokenResponse(BaseModel):
     user_id: str
     login: str
     error: Error
+
+
+class GetCommentsResponse(BaseModel):
+    data: List
+    error: Error

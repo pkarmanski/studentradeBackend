@@ -195,3 +195,29 @@ class MysqlManager:
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_ACTIVATE_USER_ERROR.description.format(self.__log_id, user_id, e))
             raise e
+
+    def get_comments(self, post_id: int) -> List:
+        try:
+            get_comments_query = MysqlQuery.GET_COMMENTS.query.format(post_id,
+                                                                      PostStatus.ACTIVE.get_description.lower())
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(get_comments_query))
+            cursor = self.__cursor
+            cursor.execute(get_comments_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_COMMENTS_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        else:
+            return data
+
+    def upload_comment(self, user_id: str, content: str, post_id: int):
+        try:
+            upload_post_query = MysqlQuery.UPLOAD_COMMENT.query.format(user_id, content, get_current_date(), post_id,
+                                                                       PostStatus.ACTIVE.get_description.lower())
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
+            cursor = self.__cursor
+            cursor.execute(upload_post_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_UPLOAD_COMMENT_ERROR.description.format(self.__log_id, user_id, e))
+            raise e

@@ -3,10 +3,11 @@ import logging
 import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword,\
-    ChangePassword, UploadPostData
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
+    ChangePassword, UploadPostData, UploadCommentBody
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
-    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
+    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse,\
+    GetCommentsResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
@@ -332,4 +333,51 @@ class Service:
             else:
                 error = Error(errorCode=ServiceErrorMsg.ACTIVATE_USER_ERROR.error_id,
                               description=ServiceErrorMsg.ACTIVATE_USER_ERROR.description)
+        return error
+
+    def get_comments(self, post_id: int):
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_comments(post_id)
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_COMMENTS_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_COMMENTS_ERROR.description)
+        return GetCommentsResponse(error=error, data=data)
+
+    def upload_comment(self, upload_comment_body: UploadCommentBody) -> Error:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, upload_comment_body.userId)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_data:
+                mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                else:
+                    try:
+                        mysql_manager.upload_comment(user_data[0]['user_id'], upload_comment_body.content,
+                                                     upload_comment_body.postId)
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                        mysql_manager.commit()
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.UPLOAD_POST_ERROR.error_id,
+                                      description=ServiceErrorMsg.UPLOAD_POST_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
+                              description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
         return error

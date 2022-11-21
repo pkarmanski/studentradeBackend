@@ -14,6 +14,10 @@ class MysqlQuery(Enum):
     CHANGE_USER_PASSWORD = 'update users set password = MD5("{}") where email = "{}"'
     UPLOAD_POST = 'insert into post (user_id, content, upload_date, image, status) values({}, "{}", "{}", "{}", "{}")'
     ACTIVATE_USER = 'update users set status="{}" where id={}'
+    GET_COMMENTS = 'select comments.content, login, comments.upload_date as uploadDate from comments, users where users.id = comments.user_id and post_id = {} and lower(comments.status) ="{}"'
+    UPLOAD_COMMENT = 'insert into comments (user_id, content, upload_date, post_id, status) values({}, "{}", "{}", "{}", "{}")'
+
+
 
     def __init__(self, query: str):
         self.__query = query

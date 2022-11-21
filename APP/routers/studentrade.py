@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter
 import time
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, \
-    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData
+    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData, UploadCommentBody
 from APP.service.studentrade_service import Service
 
 
@@ -85,4 +85,18 @@ def activate_user(activate_user_data: ActivateUserData):
     log_id = str(int(time.time()))
     service = Service(log_id, activate_user_data.token)
     return service.activate_user(activate_user_data.token, activate_user_data.code)
+
+
+@router.get('/getComments/{postId}')
+def get_comments(postId: int):
+    log_id = str(int(time.time()))
+    service = Service(log_id, "")
+    return service.get_comments(postId)
+
+
+@router.post('/uploadComment')
+def upload_comment(upload_comment_body: UploadCommentBody):
+    log_id = str(int(time.time()))
+    service = Service(log_id, upload_comment_body.userId)
+    return service.upload_comment(upload_comment_body)
 
