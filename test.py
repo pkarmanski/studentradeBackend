@@ -1,9 +1,14 @@
-import datetime
-import requests
-import base64
-import json
-from APP.data_models.rest_data_models.request_data_models import UploadPostData, LoginUser
-from APP.utils.data_manger import save_file
+#
+from APP.utils.data_manger import save_file, get_posts_image
+
+test_data = {
+    'image': 'D:\PyCharm\StudentTrade\storage\logo_v3.png.png'
+}
+
+data = [test_data]
+# with open(test_data['image'], 'rb') as f:
+#     print(f.read())
+print(get_posts_image(data))
 
 # with open("logo_v3.png", "rb") as f:
 #     data = f.read()
