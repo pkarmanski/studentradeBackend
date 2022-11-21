@@ -28,7 +28,6 @@ def login_user(login_user_data: LoginUser):
 def get_post():
     log_id = str(int(time.time()))
     service = Service(log_id, '')
-    logging.critical(service.get_posts().json())
     return service.get_posts()
 
 
