@@ -9,7 +9,7 @@ class SqliteQuery(Enum):
     insert_user_forgot_password = 'insert into forgot_password (user_email, code, confirmation_time) values("{}", "{}", "{}")'
     insert_user_to_activate = 'insert into activate_user (token, code, user_id, register_time) values("{}", "{}", {},"{}")'
 
-    select_user = 'select user_id, login from logged_users where temporary_id="{}"'
+    select_user = 'select user_id, login from logged_users where temporary_id="{}" or ip = "{}"'
     select_forgot_code = 'select code from forgot_password where user_email="{}"'
     select_activate_user_code = 'select user_id from activate_user where token="{}" and code="{}"'
 

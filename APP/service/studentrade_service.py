@@ -7,10 +7,10 @@ from APP.data_models.rest_data_models.request_data_models import RegisterUser, L
     ChangePassword, UploadPostData, UploadCommentBody, UploadProductData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse,\
-    GetCommentsResponse, GetProductTypeListResponse
+    GetCommentsResponse, GetProductTypeListResponse, GetProductResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
-from APP.enums.status import PostStatus
+from APP.enums.status import PostStatus, ProductStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user, insert_user_forgot_password, \
     select_forgot_code, delete_forgot_user, insert_user_to_activate, select_activate_user, select_all
 from APP.utils.data_manger import generate_token, generate_code, save_file, generate_link, get_file_data
@@ -173,10 +173,11 @@ class Service:
                               description=ServiceErrorMsg.GET_COURSE_ERROR.description)
         return GetCourseListResponse(error=error, data=data)
 
-    def validate_token(self, token: str) -> ValidateTokenResponse:
+    def validate_token(self, token: str, ip: str) -> ValidateTokenResponse:
         login = "-1"
         try:
-            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token)
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token, ip)
+            print(user_data)
         except sqlite3.Error:
             error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
                           description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
@@ -184,12 +185,12 @@ class Service:
             try:
                 if user_data:
                     token = generate_token()
+                    login = user_data[0]['login']
                     update_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_data[0]['user_id'], token)
                 else:
                     token = DefaultValues.token_default.default
                 error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
                               description=ServiceErrorMsg.EVERYTHING_OK.description)
-                login = user_data[0]['login']
             except sqlite3.Error:
                 error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
                               description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
@@ -437,3 +438,27 @@ class Service:
                 error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_TYPE.error_id,
                               description=ServiceErrorMsg.GET_PRODUCT_TYPE.description)
         return GetProductTypeListResponse(error=error, data=data)
+
+    def get_products(self, product_type: int) -> GetPostsResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_products(product_type, ProductStatus.ACTIVE.get_description)
+                for record in data:
+                    try:
+                        record['image'] = get_file_data(record['image'])
+                        record['extension'] = record['image'].split(".")[-1]
+                    except Exception:
+                        record['image'] = ""
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_ERROR.description)
+        return GetPostsResponse(error=error, data=data)

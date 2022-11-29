@@ -236,7 +236,7 @@ class MysqlManager:
                                                                                upload_product_data.price,
                                                                                upload_product_data.content,
                                                                                upload_product_data.image)
-            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_product_query))
             cursor = self.__cursor
             cursor.execute(upload_product_query)
         except mysql.connector.Error as e:
@@ -254,5 +254,18 @@ class MysqlManager:
             data = [dict(zip(columns, row)) for row in cursor.fetchall()]
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_GET_PRODUCT_TYPE.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data
+
+    def get_products(self, product_type: int, status: str) -> List:
+        try:
+            get_products_query = MysqlQuery.GET_PRODUCTS.query.format(product_type, status)
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, get_products_query))
+            cursor = self.__cursor
+            cursor.execute(get_products_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_POSTS_ERROR.description.format(self.__log_id, self.__user_name, e))
             raise e
         return data

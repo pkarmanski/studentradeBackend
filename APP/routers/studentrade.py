@@ -52,11 +52,11 @@ def get_faculty_list():
     return service.get_course_list()
 
 
-@router.get('/validateToken/{token}')
-def validate_token(token: str):
+@router.get('/validateToken/{token}/{ip}')
+def validate_token(token: str, ip: str):
     log_id = str(int(time.time()))
     service = Service(log_id, token)
-    return service.validate_token(token)
+    return service.validate_token(token, ip)
 
 
 @router.post('/forgotPassword')
@@ -113,3 +113,10 @@ def get_product_type():
     log_id = str(int(time.time()))
     service = Service(log_id, '')
     return service.get_product_type()
+
+
+@router.get('/getProducts/{productType}')
+def get_products(productType: int):
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_products(productType)

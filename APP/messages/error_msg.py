@@ -59,6 +59,7 @@ class ServiceErrorMsg(Enum):
     GET_COMMENTS_ERROR = ("FAILED_TO_GET_COMMENTS", 121)
     UPLOAD_PRODUCT_ERROR = ("FAILED_TO_UPLOAD_PRODUCT", 122)
     GET_PRODUCT_TYPE = ("FAILED_TO_GET_PRODUCT_TYPE", 123)
+    GET_PRODUCT_ERROR = ("FAILED_TO_GET_PRODUCT", 124)
 
     def __init__(self, description: str, error_id: int):
         self.__description = description

@@ -47,3 +47,9 @@ class ValidateTokenResponse(BaseModel):
 class GetCommentsResponse(BaseModel):
     data: List
     error: Error
+
+
+class GetProductResponse(BaseModel):
+    data: List
+    error: Error
+
