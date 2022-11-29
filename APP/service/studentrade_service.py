@@ -4,10 +4,10 @@ import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
-    ChangePassword, UploadPostData, UploadCommentBody
+    ChangePassword, UploadPostData, UploadCommentBody, UploadProductData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse,\
-    GetCommentsResponse
+    GetCommentsResponse, GetProductTypeListResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
 from APP.enums.status import PostStatus
@@ -381,3 +381,59 @@ class Service:
                 error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
                               description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
         return error
+
+    def upload_product(self, upload_product_data: UploadProductData) -> Error:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, upload_product_data.userId)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_data:
+                mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                else:
+                    try:
+                        upload_product_data.userId = user_data[0]['user_id']
+                        if upload_product_data.image is not None:
+                            upload_product_data.image = save_file(upload_product_data.image,
+                                                                  upload_product_data.fileName,
+                                                                  self.__yaml_data.get_save_file_path())
+                            mysql_manager.upload_product(upload_product_data)
+
+                        else:
+                            upload_product_data.image = ''
+                            mysql_manager.upload_product(upload_product_data)
+                        mysql_manager.commit()
+                        mysql_manager.disconnect()
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.UPLOAD_PRODUCT_ERROR.error_id,
+                                      description=ServiceErrorMsg.UPLOAD_PRODUCT_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
+                              description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
+        return error
+
+    def get_product_type(self) -> GetProductTypeListResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_product_type()
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_TYPE.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_TYPE.description)
+        return GetProductTypeListResponse(error=error, data=data)

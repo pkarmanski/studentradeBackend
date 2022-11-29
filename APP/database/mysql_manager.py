@@ -1,12 +1,12 @@
 import mysql.connector
 from mysql.connector.cursor import MySQLCursor
 from APP.data_models.service_data_models.service_data_models import DatabaseParams
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, UploadProductData
 from APP.messages.info_msg import LogInfoMsg
 from APP.messages.error_msg import LogErrorMsg
 from APP.database.mysql_query import MysqlQuery
 from APP.utils.data_manger import get_current_date
-from APP.enums.status import UserStatus, PostStatus
+from APP.enums.status import UserStatus, PostStatus, ProductStatus
 
 import logging
 from typing import List
@@ -221,3 +221,38 @@ class MysqlManager:
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_UPLOAD_COMMENT_ERROR.description.format(self.__log_id, user_id, e))
             raise e
+
+    def upload_product(self, upload_product_data: UploadProductData):
+        try:
+            upload_product_query = MysqlQuery.UPLOAD_PRODUCT_DATA.query.format(upload_product_data.productType,
+                                                                               upload_product_data.title,
+                                                                               upload_product_data.userId,
+                                                                               get_current_date(),
+                                                                               get_current_date(),
+                                                                               ProductStatus.ACTIVE.
+                                                                               get_description.lower(),
+                                                                               upload_product_data.year,
+                                                                               upload_product_data.fieldOfStudy,
+                                                                               upload_product_data.price,
+                                                                               upload_product_data.content,
+                                                                               upload_product_data.image)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
+            cursor = self.__cursor
+            cursor.execute(upload_product_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_UPLOAD_POST_ERROR.description.format(self.__log_id, user_id, e))
+            raise e
+
+    def get_product_type(self) -> List:
+        try:
+            get_product_type_query = MysqlQuery.GET_PRODUCT_TYPE.query
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                  get_product_type_query))
+            cursor = self.__cursor
+            cursor.execute(get_product_type_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_PRODUCT_TYPE.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data

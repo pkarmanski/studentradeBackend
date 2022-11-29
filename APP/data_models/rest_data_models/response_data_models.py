@@ -23,6 +23,11 @@ class GetFacultyListResponse(BaseModel):
     error: Error
 
 
+class GetProductTypeListResponse(BaseModel):
+    data: List
+    error: Error
+
+
 class GetCourseListResponse(BaseModel):
     data: List
     error: Error
