@@ -30,6 +30,18 @@ class MysqlQuery(Enum):
     insert into prodcuts (type_id, name, user_id, upload_date, expiration_date, status, study_year, 
      field_of_study_id, price, comment , image) values({},"{}",{},"{}","{}","{}",{},{},{},"{}","{}")
     """
+    GET_FILTERED_PRODUCTS = """
+    select prodcuts.id, email, prodcuts.name as title, login, study_year as studyYear,upload_date as uploadDate, 
+    field_of_study.name as field, price, comment as content, image 
+    from prodcuts 
+    join field_of_study on field_of_study.id = prodcuts.field_of_study_id
+    join users on users.id = prodcuts.user_id
+    where type_id = {} and prodcuts.status = "{}" 
+    {}
+    order by upload_date {}
+    """
+
+
 
     def __init__(self, query: str):
         self.__query = query

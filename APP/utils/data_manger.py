@@ -45,3 +45,10 @@ def get_file_data(file_path: str) -> str:
 def generate_link(token: str, code: str):
     return "http://157.158.126.137:8081/studentrade_v3_war_exploded/login/" + token + "/" + code
 
+
+def generate_title_filter(title: str) -> str:
+    title_split = title.split(" ")
+    filter = ''
+    for item in title_split:
+        filter = filter + f"%{item}% "
+    return filter.rstrip()

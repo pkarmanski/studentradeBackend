@@ -4,7 +4,7 @@ import sqlite3
 import mysql.connector
 from APP.messages.error_msg import ServiceErrorMsg
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
-    ChangePassword, UploadPostData, UploadCommentBody, UploadProductData
+    ChangePassword, UploadPostData, UploadCommentBody, UploadProductData, FilterProductsData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
     GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse,\
     GetCommentsResponse, GetProductTypeListResponse, GetProductResponse
@@ -439,7 +439,7 @@ class Service:
                               description=ServiceErrorMsg.GET_PRODUCT_TYPE.description)
         return GetProductTypeListResponse(error=error, data=data)
 
-    def get_products(self, product_type: int) -> GetPostsResponse:
+    def get_products(self, product_type: int) -> GetProductResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
         data = []
         try:
@@ -461,4 +461,30 @@ class Service:
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_ERROR.error_id,
                               description=ServiceErrorMsg.GET_PRODUCT_ERROR.description)
-        return GetPostsResponse(error=error, data=data)
+        return GetProductResponse(error=error, data=data)
+
+    def filter_products(self, filter_products_data: FilterProductsData) -> GetProductResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.filter_products(filter_products_data)
+                for record in data:
+                    try:
+                        record['image'] = get_file_data(record['image'])
+                        record['extension'] = record['image'].split(".")[-1]
+                    except Exception:
+                        record['image'] = ""
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_ERROR.description)
+        return GetProductResponse(error=error, data=data)
+
+

@@ -62,3 +62,13 @@ class UploadProductData(BaseModel):
     productType: int
     price: int
     year: float
+
+
+class FilterProductsData(BaseModel):
+    priceMin: str
+    priceMax: str
+    fieldOfStudyId: int
+    uploadDate: str
+    yearOfStudy: str
+    title: str
+    productType: int

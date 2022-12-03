@@ -1,14 +1,19 @@
 #
-from APP.utils.data_manger import save_file, get_posts_image
+from APP.utils.data_manger import generate_title_filter
 
-test_data = {
-    'image': 'D:\PyCharm\StudentTrade\storage\logo_v3.png.png'
-}
+# test_data = {
+#     'image': 'D:\PyCharm\StudentTrade\storage\logo_v3.png.png'
+# }
+#
+# data = [test_data]
+# # with open(test_data['image'], 'rb') as f:
+# #     print(f.read())
+# print(get_posts_image(data))
 
-data = [test_data]
-# with open(test_data['image'], 'rb') as f:
-#     print(f.read())
-print(get_posts_image(data))
+
+data = generate_title_filter(title="Programowanie obiektowe bla bla bla")
+print(data)
+
 
 # with open("logo_v3.png", "rb") as f:
 #     data = f.read()

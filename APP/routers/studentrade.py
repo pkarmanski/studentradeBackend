@@ -3,7 +3,8 @@ import logging
 from fastapi import APIRouter
 import time
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, \
-    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData, UploadCommentBody, UploadProductData
+    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData, UploadCommentBody, UploadProductData,\
+    FilterProductsData
 from APP.service.studentrade_service import Service
 
 
@@ -120,3 +121,11 @@ def get_products(productType: int):
     log_id = str(int(time.time()))
     service = Service(log_id, '')
     return service.get_products(productType)
+
+
+@router.post('/filterProducts')
+def get_products(filter_products_data: FilterProductsData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.filter_products(filter_products_data)
+
