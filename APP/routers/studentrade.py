@@ -3,8 +3,10 @@ import logging
 from fastapi import APIRouter
 import time
 from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, \
-    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData
+    ForgotPassword, ChangePassword, UploadPostData, ActivateUserData, UploadCommentBody, UploadProductData,\
+    FilterProductsData
 from APP.service.studentrade_service import Service
+from typing import Optional
 
 
 router = APIRouter(prefix='/studentrade/v1')
@@ -30,6 +32,12 @@ def get_post():
     service = Service(log_id, '')
     return service.get_posts()
 
+@router.get('/getPosts/{faculty}')
+def get_post(faculty: Optional[int] = None):
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_posts(faculty)
+
 
 @router.get('/getFacultyList')
 def get_faculty_list():
@@ -52,11 +60,11 @@ def get_faculty_list():
     return service.get_course_list()
 
 
-@router.get('/validateToken/{token}')
-def validate_token(token: str):
+@router.get('/validateToken/{token}/{ip}')
+def validate_token(token: str, ip: str):
     log_id = str(int(time.time()))
     service = Service(log_id, token)
-    return service.validate_token(token)
+    return service.validate_token(token, ip)
 
 
 @router.post('/forgotPassword')
@@ -85,4 +93,46 @@ def activate_user(activate_user_data: ActivateUserData):
     log_id = str(int(time.time()))
     service = Service(log_id, activate_user_data.token)
     return service.activate_user(activate_user_data.token, activate_user_data.code)
+
+
+@router.get('/getComments/{postId}')
+def get_comments(postId: int):
+    log_id = str(int(time.time()))
+    service = Service(log_id, "")
+    return service.get_comments(postId)
+
+
+@router.post('/uploadComment')
+def upload_comment(upload_comment_body: UploadCommentBody):
+    log_id = str(int(time.time()))
+    service = Service(log_id, upload_comment_body.userId)
+    return service.upload_comment(upload_comment_body)
+
+
+@router.post('/uploadProduct')
+def upload_comment(upload_product_data: UploadProductData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, upload_product_data.userId)
+    return service.upload_product(upload_product_data)
+
+
+@router.get('/getProductType')
+def get_product_type():
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_product_type()
+
+
+@router.get('/getProducts/{productType}')
+def get_products(productType: int):
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.get_products(productType)
+
+
+@router.post('/filterProducts')
+def get_products(filter_products_data: FilterProductsData):
+    log_id = str(int(time.time()))
+    service = Service(log_id, '')
+    return service.filter_products(filter_products_data)
 

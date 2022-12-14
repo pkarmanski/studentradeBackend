@@ -22,6 +22,9 @@ class LogErrorMsg(Enum):
     MYSQL_CHANGE_PASSWORD_ERROR = 'session_id: {}, failed to change password to user with email: {}, error: {}'
     MYSQL_UPLOAD_POST_ERROR = 'session_id: {}, user: {},  failed to upload post, error: {}'
     MYSQL_ACTIVATE_USER_ERROR = 'session_id: {}, user: {}, failed to activate user, error: {}'
+    MYSQL_GET_COMMENTS_ERROR = 'session_id: {}, user: {},  failed to get comments, error: {}'
+    MYSQL_UPLOAD_COMMENT_ERROR = 'session_id: {}, user: {},  failed to upload comment, error: {}'
+    MYSQL_GET_PRODUCT_TYPE = 'session_id: {}, user: {}, failed to get product type, error: {}'
 
     def __init__(self, description: str):
         self.__description = description
@@ -53,6 +56,10 @@ class ServiceErrorMsg(Enum):
     USER_NOT_LOGGED_IN_ERROR = ('USER_NOT_LOGGED_IN', 118)
     UPLOAD_POST_ERROR = ("FAILED_TO_UPLOAD_POST", 119)
     ACTIVATE_USER_ERROR = ("FAILED_TO_ACTIVATE_USER", 120)
+    GET_COMMENTS_ERROR = ("FAILED_TO_GET_COMMENTS", 121)
+    UPLOAD_PRODUCT_ERROR = ("FAILED_TO_UPLOAD_PRODUCT", 122)
+    GET_PRODUCT_TYPE = ("FAILED_TO_GET_PRODUCT_TYPE", 123)
+    GET_PRODUCT_ERROR = ("FAILED_TO_GET_PRODUCT", 124)
 
     def __init__(self, description: str, error_id: int):
         self.__description = description

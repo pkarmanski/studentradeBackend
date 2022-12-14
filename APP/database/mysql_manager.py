@@ -1,15 +1,16 @@
 import mysql.connector
 from mysql.connector.cursor import MySQLCursor
 from APP.data_models.service_data_models.service_data_models import DatabaseParams
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, UploadProductData,\
+    FilterProductsData
 from APP.messages.info_msg import LogInfoMsg
 from APP.messages.error_msg import LogErrorMsg
 from APP.database.mysql_query import MysqlQuery
-from APP.utils.data_manger import get_current_date
-from APP.enums.status import UserStatus, PostStatus
+from APP.utils.data_manger import get_current_date, generate_title_filter
+from APP.enums.status import UserStatus, PostStatus, ProductStatus
 
 import logging
-from typing import List
+from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
@@ -107,9 +108,13 @@ class MysqlManager:
             raise e
         return data
 
-    def get_posts(self, status: str, post_select_limit: int) -> List:
+    def get_posts(self, status: str, faculty: Optional[int], post_select_limit: int) -> List:
         try:
-            get_post_query = MysqlQuery.GET_POSTS.query.format(status, post_select_limit)
+            if faculty is not None:
+                data = f" and users.faculty_id = {faculty}"
+            else:
+                data = ''
+            get_post_query = MysqlQuery.GET_POSTS.query.format(status, data, post_select_limit)
             logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, get_post_query))
             cursor = self.__cursor
             cursor.execute(get_post_query)
@@ -195,3 +200,107 @@ class MysqlManager:
         except mysql.connector.Error as e:
             logger.error(LogErrorMsg.MYSQL_ACTIVATE_USER_ERROR.description.format(self.__log_id, user_id, e))
             raise e
+
+    def get_comments(self, post_id: int) -> List:
+        try:
+            get_comments_query = MysqlQuery.GET_COMMENTS.query.format(post_id,
+                                                                      PostStatus.ACTIVE.get_description.lower())
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(get_comments_query))
+            cursor = self.__cursor
+            cursor.execute(get_comments_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_COMMENTS_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        else:
+            return data
+
+    def upload_comment(self, user_id: str, content: str, post_id: int):
+        try:
+            upload_post_query = MysqlQuery.UPLOAD_COMMENT.query.format(user_id, content, get_current_date(), post_id,
+                                                                       PostStatus.ACTIVE.get_description.lower())
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_post_query))
+            cursor = self.__cursor
+            cursor.execute(upload_post_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_UPLOAD_COMMENT_ERROR.description.format(self.__log_id, user_id, e))
+            raise e
+
+    def upload_product(self, upload_product_data: UploadProductData):
+        try:
+            upload_product_query = MysqlQuery.UPLOAD_PRODUCT_DATA.query.format(upload_product_data.productType,
+                                                                               upload_product_data.title,
+                                                                               upload_product_data.userId,
+                                                                               get_current_date(),
+                                                                               get_current_date(),
+                                                                               ProductStatus.ACTIVE.
+                                                                               get_description.lower(),
+                                                                               upload_product_data.year,
+                                                                               upload_product_data.fieldOfStudy,
+                                                                               upload_product_data.price,
+                                                                               upload_product_data.content,
+                                                                               upload_product_data.image)
+            logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(upload_product_query))
+            cursor = self.__cursor
+            cursor.execute(upload_product_query)
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_UPLOAD_POST_ERROR.description.format(self.__log_id, user_id, e))
+            raise e
+
+    def get_product_type(self) -> List:
+        try:
+            get_product_type_query = MysqlQuery.GET_PRODUCT_TYPE.query
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name,
+                                                                  get_product_type_query))
+            cursor = self.__cursor
+            cursor.execute(get_product_type_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_PRODUCT_TYPE.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data
+
+    def get_products(self, product_type: int, status: str) -> List:
+        try:
+            get_products_query = MysqlQuery.GET_PRODUCTS.query.format(product_type, status)
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, get_products_query))
+            cursor = self.__cursor
+            cursor.execute(get_products_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_POSTS_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data
+
+    def filter_products(self, filter_products_data: FilterProductsData):
+        try:
+            filter = ''
+            if filter_products_data.priceMax != '-1':
+                filter = filter + f" and price < {filter_products_data.priceMax}"
+            if filter_products_data.priceMin != '-1':
+                filter = filter + f" and price > {filter_products_data.priceMin}"
+            if filter_products_data.fieldOfStudyId != -1:
+                filter = filter + f" and field_of_study_id = {filter_products_data.fieldOfStudyId}"
+            if filter_products_data.yearOfStudy != '-1':
+                filter = filter + f" and study_year = {filter_products_data.yearOfStudy}"
+            if filter_products_data.title != '-1' and filter_products_data.title != '':
+                filter = filter + f' and lower(prodcuts.name) like "{generate_title_filter(filter_products_data.title).lower()}"'
+            if filter_products_data.uploadDate == 'Newest':
+                order = 'desc'
+            else:
+                order = 'asc'
+            filter_products_query = MysqlQuery.GET_FILTERED_PRODUCTS.query.format(filter_products_data.productType,
+                                                                                  ProductStatus.ACTIVE.get_description
+                                                                                  .lower(), filter, order)
+            logger.info(LogInfoMsg.MYSQL_QUERY.description.format(self.__log_id, self.__user_name, filter_products_query))
+            cursor = self.__cursor
+            cursor.execute(filter_products_query)
+            columns = [item[0] for item in cursor.description]
+            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        except mysql.connector.Error as e:
+            logger.error(LogErrorMsg.MYSQL_GET_POSTS_ERROR.description.format(self.__log_id, self.__user_name, e))
+            raise e
+        return data

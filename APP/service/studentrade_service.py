@@ -2,14 +2,16 @@ import email.errors
 import logging
 import sqlite3
 import mysql.connector
+from typing import Optional
 from APP.messages.error_msg import ServiceErrorMsg
-from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword,\
-    ChangePassword, UploadPostData
+from APP.data_models.rest_data_models.request_data_models import RegisterUser, LoginUser, SendMailData, ForgotPassword, \
+    ChangePassword, UploadPostData, UploadCommentBody, UploadProductData, FilterProductsData
 from APP.data_models.rest_data_models.response_data_models import Error, LoginUserResponse, GetPostsResponse,\
-    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse
+    GetFiledOfStudyListResponse, GetCourseListResponse, GetFacultyListResponse, ValidateTokenResponse,\
+    GetCommentsResponse, GetProductTypeListResponse, GetProductResponse
 from APP.database.mysql_manager import MysqlManager
 from APP.utils.yaml_manager import YamlData
-from APP.enums.status import PostStatus
+from APP.enums.status import PostStatus, ProductStatus
 from APP.database.sqlite_manager import insert_user, update_user, select_user, insert_user_forgot_password, \
     select_forgot_code, delete_forgot_user, insert_user_to_activate, select_activate_user, select_all
 from APP.utils.data_manger import generate_token, generate_code, save_file, generate_link, get_file_data
@@ -93,7 +95,7 @@ class Service:
                               description=ServiceErrorMsg.LOGIN_USER_ERROR.description)
         return LoginUserResponse(error=error, user_id=token, login=login_user_data.login)
 
-    def get_posts(self) -> GetPostsResponse:
+    def get_posts(self, faculty: Optional[int] = None) -> GetPostsResponse:
         mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
         data = []
         try:
@@ -103,16 +105,16 @@ class Service:
                           description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
         else:
             try:
-                data = mysql_manager.get_posts(PostStatus.ACTIVE.get_description,
-                                               self.__yaml_data.get_select_posts_limit())
-                for record in data:
-                    try:
-                        record['image'] = get_file_data(record['image'])
-                        record['extension'] = record['image'].split(".")[-1]
-                    except Exception:
-                        record['image'] = ""
-                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
-                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    data = mysql_manager.get_posts(PostStatus.ACTIVE.get_description, faculty,
+                                                   self.__yaml_data.get_select_posts_limit())
+                    for record in data:
+                        try:
+                            record['image'] = get_file_data(record['image'])
+                            record['extension'] = record['image'].split(".")[-1]
+                        except Exception:
+                            record['image'] = ""
+                    error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                  description=ServiceErrorMsg.EVERYTHING_OK.description)
             except mysql.connector.Error:
                 error = Error(errorCode=ServiceErrorMsg.GET_POSTS_ERROR.error_id,
                               description=ServiceErrorMsg.GET_POSTS_ERROR.description)
@@ -172,10 +174,11 @@ class Service:
                               description=ServiceErrorMsg.GET_COURSE_ERROR.description)
         return GetCourseListResponse(error=error, data=data)
 
-    def validate_token(self, token: str) -> ValidateTokenResponse:
+    def validate_token(self, token: str, ip: str) -> ValidateTokenResponse:
         login = "-1"
         try:
-            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token)
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, token, ip)
+            print(user_data)
         except sqlite3.Error:
             error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
                           description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
@@ -183,12 +186,12 @@ class Service:
             try:
                 if user_data:
                     token = generate_token()
+                    login = user_data[0]['login']
                     update_user(self.__yaml_data.get_sqlite_db(), self.__log_id, user_data[0]['user_id'], token)
                 else:
                     token = DefaultValues.token_default.default
                 error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
                               description=ServiceErrorMsg.EVERYTHING_OK.description)
-                login = user_data[0]['login']
             except sqlite3.Error:
                 error = Error(errorCode=ServiceErrorMsg.SQLITE_UPDATE_ERROR.error_id,
                               description=ServiceErrorMsg.SQLITE_UPDATE_ERROR.description)
@@ -333,3 +336,156 @@ class Service:
                 error = Error(errorCode=ServiceErrorMsg.ACTIVATE_USER_ERROR.error_id,
                               description=ServiceErrorMsg.ACTIVATE_USER_ERROR.description)
         return error
+
+    def get_comments(self, post_id: int):
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_comments(post_id)
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_COMMENTS_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_COMMENTS_ERROR.description)
+        return GetCommentsResponse(error=error, data=data)
+
+    def upload_comment(self, upload_comment_body: UploadCommentBody) -> Error:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, upload_comment_body.userId)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_data:
+                mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                else:
+                    try:
+                        mysql_manager.upload_comment(user_data[0]['user_id'], upload_comment_body.content,
+                                                     upload_comment_body.postId)
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                        mysql_manager.commit()
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.UPLOAD_POST_ERROR.error_id,
+                                      description=ServiceErrorMsg.UPLOAD_POST_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
+                              description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
+        return error
+
+    def upload_product(self, upload_product_data: UploadProductData) -> Error:
+        try:
+            user_data = select_user(self.__yaml_data.get_sqlite_db(), self.__log_id, upload_product_data.userId)
+        except sqlite3.Error:
+            error = Error(errorCode=ServiceErrorMsg.SQLITE_SELECT_ERROR.error_id,
+                          description=ServiceErrorMsg.SQLITE_SELECT_ERROR.description)
+        else:
+            if user_data:
+                mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+                try:
+                    mysql_manager.connect()
+                except mysql.connector.Error:
+                    error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                                  description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+                else:
+                    try:
+                        upload_product_data.userId = user_data[0]['user_id']
+                        if upload_product_data.image is not None:
+                            upload_product_data.image = save_file(upload_product_data.image,
+                                                                  upload_product_data.fileName,
+                                                                  self.__yaml_data.get_save_file_path())
+                            mysql_manager.upload_product(upload_product_data)
+
+                        else:
+                            upload_product_data.image = ''
+                            mysql_manager.upload_product(upload_product_data)
+                        mysql_manager.commit()
+                        mysql_manager.disconnect()
+                        error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                                      description=ServiceErrorMsg.EVERYTHING_OK.description)
+                    except mysql.connector.Error:
+                        error = Error(errorCode=ServiceErrorMsg.UPLOAD_PRODUCT_ERROR.error_id,
+                                      description=ServiceErrorMsg.UPLOAD_PRODUCT_ERROR.description)
+            else:
+                error = Error(errorCode=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.error_id,
+                              description=ServiceErrorMsg.USER_NOT_LOGGED_IN_ERROR.description)
+        return error
+
+    def get_product_type(self) -> GetProductTypeListResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_product_type()
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_TYPE.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_TYPE.description)
+        return GetProductTypeListResponse(error=error, data=data)
+
+    def get_products(self, product_type: int) -> GetProductResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.get_products(product_type, ProductStatus.ACTIVE.get_description)
+                for record in data:
+                    try:
+                        record['image'] = get_file_data(record['image'])
+                        record['extension'] = record['image'].split(".")[-1]
+                    except Exception:
+                        record['image'] = ""
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_ERROR.description)
+        return GetProductResponse(error=error, data=data)
+
+    def filter_products(self, filter_products_data: FilterProductsData) -> GetProductResponse:
+        mysql_manager = MysqlManager(self.__log_id, self.__user_name, self.__yaml_data.get_mysql_params())
+        data = []
+        try:
+            mysql_manager.connect()
+        except mysql.connector.Error:
+            error = Error(errorCode=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.error_id,
+                          description=ServiceErrorMsg.MYSQL_CONNECTION_ERROR.description)
+        else:
+            try:
+                data = mysql_manager.filter_products(filter_products_data)
+                for record in data:
+                    try:
+                        record['image'] = get_file_data(record['image'])
+                        record['extension'] = record['image'].split(".")[-1]
+                    except Exception:
+                        record['image'] = ""
+                error = Error(errorCode=ServiceErrorMsg.EVERYTHING_OK.error_id,
+                              description=ServiceErrorMsg.EVERYTHING_OK.description)
+            except mysql.connector.Error:
+                error = Error(errorCode=ServiceErrorMsg.GET_PRODUCT_ERROR.error_id,
+                              description=ServiceErrorMsg.GET_PRODUCT_ERROR.description)
+        return GetProductResponse(error=error, data=data)
+
+

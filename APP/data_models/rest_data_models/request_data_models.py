@@ -44,3 +44,31 @@ class UploadPostData(BaseModel):
 class ActivateUserData(BaseModel):
     token: str
     code: str
+
+
+class UploadCommentBody(BaseModel):
+    userId: str
+    content: str
+    postId: int
+
+
+class UploadProductData(BaseModel):
+    userId: str
+    title: str
+    content: str
+    image: Optional[Union[str, bytes]] = None
+    fileName: Optional[str] = None
+    fieldOfStudy: int
+    productType: int
+    price: int
+    year: float
+
+
+class FilterProductsData(BaseModel):
+    priceMin: str
+    priceMax: str
+    fieldOfStudyId: int
+    uploadDate: str
+    yearOfStudy: str
+    title: str
+    productType: int

@@ -23,6 +23,11 @@ class GetFacultyListResponse(BaseModel):
     error: Error
 
 
+class GetProductTypeListResponse(BaseModel):
+    data: List
+    error: Error
+
+
 class GetCourseListResponse(BaseModel):
     data: List
     error: Error
@@ -37,3 +42,14 @@ class ValidateTokenResponse(BaseModel):
     user_id: str
     login: str
     error: Error
+
+
+class GetCommentsResponse(BaseModel):
+    data: List
+    error: Error
+
+
+class GetProductResponse(BaseModel):
+    data: List
+    error: Error
+

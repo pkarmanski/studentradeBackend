@@ -4,7 +4,7 @@ from APP.database.sqlite_query import SqliteQuery
 from APP.messages.error_msg import ServiceErrorMsg, LogErrorMsg
 from APP.messages.info_msg import LogInfoMsg
 import time
-from typing import List
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ def update_user(db_file: str, log_id: str, user_id: str, temporary_id: str):
             raise e
 
 
-def select_user(db_file: str, log_id: str, temporary_id: str) -> List:
+def select_user(db_file: str, log_id: str, temporary_id: str, ip: Optional[str] = '') -> List:
     try:
         con = sqlite3.connect(db_file)
         logger.info(LogInfoMsg.SQLITE_CONNECTED.description.format(log_id, temporary_id))
@@ -173,7 +173,8 @@ def select_user(db_file: str, log_id: str, temporary_id: str) -> List:
         raise e
     else:
         try:
-            select_user_query = SqliteQuery.select_user.query.format(temporary_id)
+            select_user_query = SqliteQuery.select_user.query.format(temporary_id, ip)
+            print(select_user_query)
             logger.info(LogInfoMsg.SQLITE_QUERY_START.description.format(select_user_query))
             cursor = con.cursor()
             cursor.execute(select_user_query)
